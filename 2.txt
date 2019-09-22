@@ -1,0 +1,329 @@
+1)********************************************
+#include<stdio.h>
+#include<stdlib.h>       
+
+
+long memory[1000] ;
+int pc , opcode , reg , address ;
+int registers[4] , flag[] = {0,0,0,0,0,1};
+long op1 , op2 ;
+
+main(char *argv[] , int argc)
+{
+	FILE *fp ;
+	int k ;
+		fp = fopen("filename","r") ;
+		if(fp==NULL)
+		{
+			printf("Invalid file name.") ;
+			exit(0) ;
+		}
+		else
+		{	
+			pc = 0 ;
+				//reading machine code and storing in memory w.r.t pc(program counter)
+			while(!feof(fp))
+				fscanf(fp,"%ld",&memory[pc++]) ;
+			k = pc-1 ;
+			//after storing is done re-intialize pc to 0
+			pc=0 ;
+			
+			while(1) 
+			{	//formulae for storing opcode register and address in those variables
+				opcode = memory[pc]/10000 ;
+				reg = ((memory[pc]%10000)/1000) ;
+				address = (memory[pc]%10000)%1000 ;
+				
+				switch(opcode)
+				{
+					case 0 :
+						exit(0) ;
+					break ;
+					
+					case 3 :	//adding and storing answer in register
+						registers[reg]+=memory[address] ;
+					break ;
+					
+					case 4 :	//subtracting and storing answer in register
+						registers[reg]-=memory[address] ;
+					break ;
+					
+					case 7 :	//multiply and stores answer in register
+						registers[reg]*=memory[address] ;
+					break ;      	
+					
+					case 5 :	//mover
+						registers[reg]=memory[address] ;
+					break ;
+					
+					case 6 :	//movem 
+						memory[address]=registers[reg] ;
+					break ;
+					
+					case 10 :	//compare op1 and op2 will store values of what to be compared
+						op1 = registers[reg] ;
+						op2 = memory[address] ;
+					break ;
+										
+					case 9 :	//bc 
+						address = address-1 ;
+						
+						switch(reg)
+						{
+							case 0 :
+								if(op1>op2)
+									pc = address ;
+								printf("\n%daddress : ",pc) ;
+							break ;
+							
+							case 1 :
+								if(op1>=op2)
+									pc = address ;
+							break ;
+							
+							case 2 :
+								if(op1==op2)
+									pc = address ;
+							break ;
+							
+							case 3 :
+								if(op1<op2)
+									pc = address ;
+							break ;
+							
+							case 4 :
+								if(op1<=op2)
+									pc = address ;
+							break ;
+							
+							case 5 :
+								pc = address ;
+							break ;
+						}
+					break ;
+					
+					case 8 :	//div
+						memory[address]/=registers[reg] ;
+					break ;
+					
+					case 1 :	//read
+						printf("Enter the value : ") ;
+						scanf("%ld",&memory[address]) ;
+					break ;
+					
+					case 2 :	//accept i/p
+					  if(memory[address]==1)
+						//printf("Answer is : %ld\n",memory[address]) ;
+					    printf("Number 1 is greater\n");
+					  else
+					    printf("Number 2 is greater\n");
+					break ;
+				}
+				pc++ ;
+			}
+		}
+	return 0 ;
+}
+
+
+2)*********************************************
+
+
+
+
+#include<stdio.h>
+#include<malloc.h>
+
+#define newnode (struct node *)malloc(sizeof(struct node))
+struct node	
+{
+	int jobno,bt,rt,at,st,ct;
+	struct node *next;
+} *JOBQ=NULL,*finish=NULL;
+
+int jobs=0;
+
+
+struct node *Append(struct node *F, int jno)	
+{
+	struct node *s,*t=newnode;
+	t->jobno=jno;
+	t->ct=0;	
+	
+	printf("Job %d arrival no:", jno);
+	scanf("%d",&t->at);
+	t->st=t->at;  		
+
+	printf("Cpu burst %d",jno);
+	scanf("%d",&t->bt);
+	t->rt=t->bt;  		
+
+	if(F==NULL)
+		{	F=t;	F->next=F;	}		 
+	else if(F->next ==F)
+		{	F->next=t; 	t->next=F;	}	
+	else
+		{
+		s=F;
+			do { s=s->next; }
+			while(s->next!=F);	
+			s->next=t;	t->next=F;	
+		}
+		
+return F;
+}
+
+
+void CreateJOBQ()
+{
+	int i;
+	printf("how many jobs");
+	scanf("%d",&jobs);
+	
+	for(i=1;i<=jobs;i++)	
+		JOBQ=Append(JOBQ,i);
+}
+
+void add_in_Finish(struct node *T)	
+{ 	
+	struct node *S;
+	T->next=NULL;
+	if(finish==NULL) finish=T;
+	
+	else
+		{
+		struct node *S;
+		for(S=finish;S->next!=NULL;S=S->next);		
+		S->next=T;
+		}
+}
+
+struct node *delNode(struct node *T)		
+{
+struct node *t1,*S;
+if(T==JOBQ) 		
+{	
+	if(JOBQ->next==JOBQ)	
+	{	
+		JOBQ=NULL;	
+		add_in_Finish(T);
+	}		}
+	
+	else 
+	{	
+		for(t1=JOBQ;t1->next!=JOBQ;t1=t1->next);	
+		JOBQ=JOBQ->next;	
+		t1->next=JOBQ;		
+		add_in_Finish(T);
+	} 
+	return JOBQ;
+	}
+	
+else
+	{	
+		for(S=T;S->next!=T;S=S->next);	
+		S ->next=T->next;	
+		add_in_Finish(T);	
+		return S->next;	
+	}
+}
+
+struct node *nextJob(struct node *F,int time)
+{
+	struct node *T=F;
+		do
+		{	
+			if(T->at<=time)	return T;
+			T=T->next;	
+		} while(T!=F);
+
+return NULL;
+}
+
+void executeJOBQ()
+{
+struct node *S=JOBQ,*T,*t;
+int timeslot=1,time=0,n=0;
+	int wt=0,tat=0,avgtat=0,avgwt=0;
+char choice;
+
+if(JOBQ==NULL)		{	printf("JOBQ is empty"); 	return;		}
+
+
+printf("Enter time slot in sec:");	
+scanf("%d", &timeslot);
+printf("\n\nclock	CPU	  JOBQ");
+
+while(JOBQ!=NULL)
+{	S=nextJob(S,time);
+	
+	if(S==NULL)	{
+	printf("%d--idle---",time++);	S=JOBQ;	
+	}	
+
+	else
+	{	
+	printf("%3d| \t J%d(%d)|",time,S->jobno,S->rt);	
+		
+		for(T=S->next;	T!=S;	T=T->next)	
+		{	
+			if(T->at<=time) 	
+			printf("\nJ%d (%d)", T->jobno,T->rt);
+		}
+		
+		
+		if (S->rt<=timeslot)		
+		{	
+			time+=S->rt;
+			if(S->ct==0)	
+				{
+				S->ct=time;
+				S=S->next;
+		}
+		else
+		{	
+			
+			S=delNode(S);			
+			
+		}
+	}
+	
+	else 
+	{	
+	time+=timeslot;	
+	T->rt-=timeslot;	 	
+	S=S->next;
+	}
+	}
+	}
+	printf("%d ---idle---",time);
+
+	
+	printf("\nreport");printf("\njobno\tarivrltime\tbursttime\tco time\tTAT\tWT\n");
+	for(t=finish;t!=NULL;t=t->next)
+	{
+		tat=t->ct-t->st;
+		wt=tat-t->bt;
+		
+		printf("\n%d\t%d\t\t%d\t\t%d\t%d\t%d\t\n",t->jobno,t->st,t->bt,t->ct,tat,wt);
+		avgtat+=tat;
+		avgwt+=wt;
+	}
+	printf("average TAT=%f",avgtat/(float)jobs);
+	printf("average WT=%f",avgwt/(float)jobs);
+	
+}
+
+main()
+{
+	CreateJOBQ();
+	executeJOBQ();
+}
+
+	
+
+	
+
+
+
+
